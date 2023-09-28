@@ -1,5 +1,5 @@
 import sqlalchemy as db 
-from sqlalchemy import Table, Column, Integer, String, select
+from sqlalchemy import Table, Column, Integer, String, ForeignKey
 
 #параметры коннекта
 login = 'postgres'
@@ -16,10 +16,17 @@ menus = Table('menus', metadata,
 	Column('description', String(300), nullable=False)
 )
 
+sub_menus = Table('sub_menus', metadata,
+	Column('sub_menu_id', Integer, primary_key=True),
+	Column('menu_id', Integer, ForeignKey('menus.menu_id')),
+	Column('title', String(120), nullable=False),
+	Column('description', String(300), nullable=False)
+)
+
 #коннект
 #db_connection = engine.connect()
 
-#класс для передачи модели таблицы, требуется запроса
+#класс для передачи копии модели таблицы, требуется для генерации запроса
 class DataBase:
 	def __init__(self, model=None):
 		engine = db.create_engine(f"postgresql+psycopg2://{login}:{password}@{host}/{db_name}")
@@ -28,6 +35,8 @@ class DataBase:
 		self.connection = engine.connect()
 		if model == 'menu':
 			self.model = menus
+		elif model == 'sub_menu':
+			self.model = sub_menus
 
 
 

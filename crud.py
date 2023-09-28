@@ -2,17 +2,21 @@ from db_config import DataBase
 from sqlalchemy import select
 import json
 
+menu_table = DataBase('menu')
+submenu_table = DataBase('sub_menu')
+
 class CRUD:
 
 	#интерфейс таблицы Menu
 	class _MenuInterface:
 
+		#конструктор Меню
 		def __init__(self, title=None, description=None):
 			self.title = title
 			self.description = description
 
 		def menu_get(self, id=None):
-			menu_table = DataBase('menu')
+			global menu_table
 			connection = DataBase().connection
 			
 			response = []
@@ -31,20 +35,20 @@ class CRUD:
 				return response
 			else:
 				connection.close()
-				return f'Меню не найдено.'
+				return None
 
 		def menu_add_record(self):
-			menu_table = DataBase('menu')
+			global menu_table
 			connection = DataBase().connection
 
 			request = menu_table.model.insert().values(title=self.title, description=self.description)
 			connection.execute(request)
 			connection.commit()
 			connection.close()
-			return "Успешно добавлено"
+			return f'Меню {self.title} успешно добавлено'
 
 		def menu_update_record(self, id=None):
-			menu_table = DataBase('menu')
+			global menu_table
 			connection = DataBase().connection
 
 			request = menu_table.model.update().where(menu_table.model.c.menu_id==id).values(title=self.title, description=self.description)
@@ -54,7 +58,7 @@ class CRUD:
 			return f'Запись {id} обнавлена'
 
 		def menu_delete_record(self, id=None):
-			menu_table = DataBase('menu')
+			global menu_table
 			connection = DataBase().connection
 
 			request = menu_table.model.delete().where(menu_table.model.c.menu_id == id)
@@ -63,3 +67,49 @@ class CRUD:
 			connection.commit()
 			connection.close()
 			return f'Запись {id} удалена'
+
+	class _SubMenuInterface:
+
+		#конструктор подменю
+		def __init__(self, title=None, description=None):
+			self.title = title
+			self.description = description
+
+		def submenu_get(self, menu_id, submenu_id=None):
+			global submenu_table
+			connection = DataBase().connection
+			response = []
+
+			if submenu_id is None:
+				request = connection.execute(select(submenu_table.model.c.sub_menu_id, submenu_table.model.c.menu_id, submenu_table.model.c.title, submenu_table.model.c.description).where(submenu_table.model.c.menu_id == menu_id)).all()
+				for row in request:
+					response.append([{'id':row[0]}, {'menu_id':row[1]}, {'title': row[2]}, {'description': row[3]}])
+			else:
+				request = connection.execute(select(submenu_table.model.c.sub_menu_id, submenu_table.model.c.menu_id, submenu_table.model.c.title, submenu_table.model.c.description).where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenu_id)).all()
+				for row in request:
+					response.append([{'id':row[0]}, {'menu_id':row[1]}, {'title': row[2]}, {'description': row[3]}])
+
+			if response:
+				return response
+			else:
+				return 'Подменю не найдено'
+
+		def submenu_add_record(self, menu_id=None):
+			global submenu_table
+			connection = DataBase().connection
+
+			r = connection.execute(select(menu_table.model.c.menu_id)).scalars().all()
+			if menu_id not in r:
+				return f'Нету меню по Id:{menu_id} к которому можно создать подменю'
+
+			request = submenu_table.model.insert().values(menu_id=menu_id, title=self.title, description=self.description)
+			connection.execute(request)
+			connection.commit()
+			connection.close()
+			return f'Подменю {self.title} успешно добавлено'
+
+		def submenu_update_record(self):
+			pass
+
+		def submenu_delete_record(self):
+			pass
