@@ -4,6 +4,7 @@ import json
 
 menu_table = DataBase('menu')
 submenu_table = DataBase('sub_menu')
+dishes = DataBase('dish')
 
 class CRUD:
 
@@ -55,9 +56,9 @@ class CRUD:
 			connection.execute(request)
 			connection.commit()
 			connection.close()
-			return f'Запись {id} обнавлена'
+			return f'Запись Меню Id:{id} обнавлена'
 
-		def menu_delete_record(self, id=None):
+		def menu_delete_record(self, id: int):
 			global menu_table
 			connection = DataBase().connection
 
@@ -66,7 +67,7 @@ class CRUD:
 			connection.execute(request)
 			connection.commit()
 			connection.close()
-			return f'Запись {id} удалена'
+			return f'Запись Меню Id:{id} удалена'
 
 	class _SubMenuInterface:
 
@@ -100,7 +101,7 @@ class CRUD:
 
 			r = connection.execute(select(menu_table.model.c.menu_id)).scalars().all()
 			if menu_id not in r:
-				return f'Нету меню по Id:{menu_id} к которому можно создать подменю'
+				return f'Нету Меню по Id:{menu_id} к которому можно создать Подменю'
 
 			request = submenu_table.model.insert().values(menu_id=menu_id, title=self.title, description=self.description)
 			connection.execute(request)
@@ -108,8 +109,36 @@ class CRUD:
 			connection.close()
 			return f'Подменю {self.title} успешно добавлено'
 
-		def submenu_update_record(self):
-			pass
+		def submenu_update_record(self, menu_id: int, submenus_id: int):
+			global submenu_table
+			connection = DataBase().connection
 
-		def submenu_delete_record(self):
-			pass
+			result = connection.execute(select(submenu_table.model).where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id)).scalars().all()
+
+			if not result:
+				connection.close()
+				return f'Не найдено Подменю Id:{submenus_id} в Меню по Id:{menu_id}'
+
+			request = submenu_table.model.update().where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id).values(title=self.title, description=self.description)
+			r = connection.execute(request)
+			connection.commit()
+			connection.close()
+
+			return f'Запись Подменю Id:{submenus_id} в Меню Id:{menu_id} обнавлена'
+
+		def submenu_delete_record(self, menu_id: int, submenus_id: int):
+			global submenu_table
+			connection = DataBase().connection
+
+			request = connection.execute(submenu_table.model.delete().where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id))
+
+			connection.commit()
+			connection.close()
+			return f'Запись Подменю Id:{submenus_id} удалена из Меню Id:{submenus_id}'
+
+	class _DishesInteface:
+
+		def __init__(self, title=None, description=None, price=None):
+			self.title = title
+			self.description = description
+			self.price = price

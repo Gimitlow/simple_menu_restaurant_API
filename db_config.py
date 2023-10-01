@@ -1,5 +1,5 @@
 import sqlalchemy as db 
-from sqlalchemy import Table, Column, Integer, String, ForeignKey
+from sqlalchemy import Table, Column, Integer, String, Float, ForeignKey
 
 #параметры коннекта
 login = 'postgres'
@@ -23,6 +23,15 @@ sub_menus = Table('sub_menus', metadata,
 	Column('description', String(300), nullable=False)
 )
 
+dishes = Table('dishes', metadata,
+	Column('dish_id', Integer, primary_key=True),
+	Column('sub_menu_id', Integer, ForeignKey('sub_menus.sub_menu_id')),
+	Column('menu_id', Integer, ForeignKey('menus.menu_id')),
+	Column('title', String(120), nullable=False),
+	Column('description', String(300), nullable=False),
+	Column('price', Float(2), nullable=False)
+)
+
 #коннект
 #db_connection = engine.connect()
 
@@ -37,8 +46,12 @@ class DataBase:
 			self.model = menus
 		elif model == 'sub_menu':
 			self.model = sub_menus
+		elif model == 'dish':
+			self.model = dishes
 
-
+#engine = db.create_engine(f"postgresql+psycopg2://{login}:{password}@{host}/{db_name}")
+#metadata.create_all(engine)
+#request = engine.connect().execute(sub_menus.c.sub_menu_id == 1)
 
 #Достать записи
 #test_list = []
