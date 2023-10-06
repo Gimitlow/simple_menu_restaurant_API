@@ -1,5 +1,6 @@
 import sqlalchemy as db 
-from sqlalchemy import Table, Column, Integer, String, Float, ForeignKey
+from sqlalchemy import Table, Column, Integer, String, DECIMAL, ForeignKey
+from sqlalchemy.orm import relationship, backref
 
 #параметры коннекта
 login = 'postgres'
@@ -13,23 +14,23 @@ metadata = db.MetaData()
 menus = Table('menus', metadata,
 	Column('menu_id', Integer, primary_key=True),
 	Column('title', String(120), nullable=False),
-	Column('description', String(300), nullable=False)
+	Column('description', String(300), nullable=False),
 )
 
 sub_menus = Table('sub_menus', metadata,
 	Column('sub_menu_id', Integer, primary_key=True),
-	Column('menu_id', Integer, ForeignKey('menus.menu_id')),
+	Column('menu_id', Integer, ForeignKey('menus.menu_id', ondelete="CASCADE")),
 	Column('title', String(120), nullable=False),
 	Column('description', String(300), nullable=False)
 )
 
 dishes = Table('dishes', metadata,
 	Column('dish_id', Integer, primary_key=True),
-	Column('sub_menu_id', Integer, ForeignKey('sub_menus.sub_menu_id')),
-	Column('menu_id', Integer, ForeignKey('menus.menu_id')),
+	Column('sub_menu_id', Integer, ForeignKey('sub_menus.sub_menu_id', ondelete="CASCADE")),
+	Column('menu_id', Integer, ForeignKey('menus.menu_id', ondelete="CASCADE")),
 	Column('title', String(120), nullable=False),
 	Column('description', String(300), nullable=False),
-	Column('price', Float(2), nullable=False)
+	Column('price', DECIMAL(5,2), nullable=False)
 )
 
 #коннект
@@ -46,6 +47,7 @@ class DataBase:
 			self.model = menus
 		elif model == 'sub_menu':
 			self.model = sub_menus
+			self.dishes = relationship('dishes', backref='sub_menus', cascade="all, delete-orphan")
 		elif model == 'dish':
 			self.model = dishes
 

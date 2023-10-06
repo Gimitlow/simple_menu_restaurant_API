@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
-from schemas import Menu, SubMenu
+from schemas import Menu, SubMenu, Dish
 from crud import CRUD
 import json
 
@@ -74,4 +74,35 @@ def update_submenu_record(menus_id: int, submenus_id: int, submenu: SubMenu):
 @app.delete("/api/v1/menus/{menus_id}/submenus/{submenus_id}")
 def delete_submenu_record(menus_id: int, submenus_id: int):
 	result = crud._SubMenuInterface().submenu_delete_record(menus_id, submenus_id)
+	return result
+
+# БЛЮДА
+#посмотреть все блюда
+@app.get("/api/v1/menus/{menus_id}/submenus/{submenus_id}/dishes")
+def get_dishes(menus_id: int, submenus_id: int):
+	result = crud._DishesInteface().dish_get(menus_id, submenus_id)
+	return result
+
+#посмотреть определенное блюдо
+@app.get("/api/v1/menus/{menus_id}/submenus/{submenus_id}/dishes/{dishes_id}")
+def get_dish_record(menus_id: int, submenus_id: int, dishes_id: int):
+	result = crud._DishesInteface().dish_get(menus_id, submenus_id, dishes_id)
+	return result
+
+#добавить блюдо
+@app.post("/api/v1/menus/{menus_id}/submenus/{submenus_id}/dishes")
+def add_new_dish(menus_id: int, submenus_id: int, dish: Dish):
+	result = crud._DishesInteface(dish.title, dish.description, dish.price).dish_add_record(menus_id, submenus_id)
+	return result
+
+#обновить блюдо
+@app.patch("/api/v1/menus/{menus_id}/submenus/{submenus_id}/dishes/{dishes_id}")
+def update_dish_record(menus_id: int, submenus_id: int, dishes_id: int, dish: Dish):
+	result = crud._DishesInteface(dish.title, dish.description, dish.price).dish_update_record(menus_id, submenus_id, dishes_id)
+	return result
+
+#удалить блюдо
+@app.delete("/api/v1/menus/{menus_id}/submenus/{submenus_id}/dishes/{dishes_id}")
+def delete_dish_record(menus_id: int, submenus_id: int, dishes_id: int):
+	result = crud._DishesInteface().dish_delete_record(menus_id, submenus_id, dishes_id)
 	return result
