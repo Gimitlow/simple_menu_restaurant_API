@@ -26,16 +26,31 @@ class CRUD:
 			request = connection.execute(select(menu_table.model.c.menu_id, menu_table.model.c.title, menu_table.model.c.description))
 			for row in request:
 				if id is None:
+					menu_list = {}
 					submenu_count = connection.execute(select(submenu_table.model).where(submenu_table.model.c.menu_id == row[0])).all()
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == row[0])).all()
-					response.append([{'id':row[0]}, {'title':row[1]}, {'description': row[2]}, {'count_submenus:': len(submenu_count)}, {'count_dishes:': len(dish_count)}])
+					
+					menu_list['id'] = row[0]
+					menu_list['title'] = row[1]
+					menu_list['description'] = row[2]
+					menu_list['count_submenus'] = len(submenu_count)
+					menu_list['count_dishes'] = len(dish_count)
+
+					response.append(menu_list)
 				elif id == row[0]:
+					menu_list = {}
 					submenu_count = connection.execute(select(submenu_table.model).where(submenu_table.model.c.menu_id == id)).all()
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == id)).all()
-					response.append([{'id':row[0]}, {'title':row[1]}, {'description': row[2]}, {'count_submenus:': len(submenu_count)}, {'count_dishes:': len(dish_count)}])
+					
+					menu_list['id'] = row[0]
+					menu_list['title'] = row[1]
+					menu_list['description'] = row[2]
+					menu_list['count_submenus'] = len(submenu_count)
+					menu_list['count_dishes'] = len(dish_count)
+					
 					connection.close()
-					return response
-			
+					return menu_list
+
 			if response:
 				connection.close()
 				return response
@@ -94,12 +109,28 @@ class CRUD:
 				request = connection.execute(select(submenu_table.model.c.sub_menu_id, submenu_table.model.c.menu_id, submenu_table.model.c.title, submenu_table.model.c.description).where(submenu_table.model.c.menu_id == menu_id)).all()
 				for row in request:
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == row[1], dish_table.model.c.sub_menu_id == row[0])).all()
-					response.append([{'id':row[0]}, {'menu_id':row[1]}, {'title': row[2]}, {'description': row[3]}, {'count_dishes:': len(dish_count)}])
+					submenus_list = {}
+					
+					submenus_list['id'] = row[0]
+					submenus_list['menu_id'] = row[1]
+					submenus_list['title'] = row[2]
+					submenus_list['description'] = row[3]
+					submenus_list['count_dishes'] = len(dish_count)
+
+					response.append(submenus_list)
 			else:
 				request = connection.execute(select(submenu_table.model.c.sub_menu_id, submenu_table.model.c.menu_id, submenu_table.model.c.title, submenu_table.model.c.description).where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenu_id)).all()
 				for row in request:
+					submenus_list = {}
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == menu_id, dish_table.model.c.sub_menu_id == submenu_id)).all()
-					response.append([{'id':row[0]}, {'menu_id':row[1]}, {'title': row[2]}, {'description': row[3]}, {'count_dishes:': len(dish_count)}])
+					
+					submenus_list['id'] = row[0]
+					submenus_list['menu_id'] = row[1]
+					submenus_list['title'] = row[2]
+					submenus_list['description'] = row[3]
+					submenus_list['count_dishes'] = len(dish_count)
+
+					return submenus_list
 
 			if response:
 				return response
@@ -172,11 +203,29 @@ class CRUD:
 			if dishes_id is None:
 				request = connection.execute(dish_table.model.select().where(dish_table.model.c.menu_id==menu_id, dish_table.model.c.sub_menu_id==submenus_id))
 				for row in request:
-					result.append([{'id':row[0]}, {'menu_id':row[1]}, {'sub_menu_id':row[2]}, {'title': row[3]}, {'description': row[4]}, {'price': "%.2f" % row[5]}])
+					dish_list = {}
+
+					dish_list['id'] = row[0]
+					dish_list['sub_menu_id'] = row[1]
+					dish_list['menu_id'] = row[2]
+					dish_list['title'] = row[3]
+					dish_list['description'] = row[4]
+					dish_list['price'] = "%.2f" % row[5]
+
+					result.append(dish_list)
 			else:
 				request = connection.execute(dish_table.model.select().where(dish_table.model.c.menu_id==menu_id, dish_table.model.c.sub_menu_id==submenus_id, dish_table.model.c.dish_id==dishes_id))
 				for row in request:
-					result.append([{'id':row[0]}, {'menu_id':row[1]}, {'sub_menu_id':row[2]}, {'title': row[3]}, {'description': row[4]}, {'price': "%.2f" % row[5]}])
+					dish_list = {}
+
+					dish_list['id'] = row[0]
+					dish_list['sub_menu_id'] = row[1]
+					dish_list['menu_id'] = row[2]
+					dish_list['title'] = row[3]
+					dish_list['description'] = row[4]
+					dish_list['price'] = "%.2f" % row[5]
+
+					return dish_list
 
 			if result:
 				connection.close()
@@ -189,13 +238,9 @@ class CRUD:
 			global dish_table
 			connection = DataBase().connection
 
-			request = connection.execute(select(menu_table.model.c.menu_id)).scalars().all()
-			if menu_id not in request:
-				return f'Нету Меню по Id:{menu_id}'
-			
-			request = connection.execute(select(submenu_table.model.c.sub_menu_id)).scalars().all()
-			if submenus_id not in request:
-				return f'Нету Подменю по Id:{submenus_id}'
+			request = connection.execute(select(dish_table.model).where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id)).all()
+			if not request:
+				return "Нету такого подменю и меню"			
 
 			request = connection.execute(dish_table.model.select().where(dish_table.model.c.menu_id == menu_id))
 			for row in request:

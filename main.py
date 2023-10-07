@@ -13,8 +13,7 @@ crud = CRUD()
 def get_menus():
 	records = crud._MenuInterface().menu_get()
 	if records:
-		result = sorted(records, key= lambda x: x[0]['id'], reverse=False)
-		return result
+		return records
 	else:
 		return []
 
