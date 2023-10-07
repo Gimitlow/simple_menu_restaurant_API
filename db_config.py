@@ -47,21 +47,5 @@ class DataBase:
 			self.model = menus
 		elif model == 'sub_menu':
 			self.model = sub_menus
-			self.dishes = relationship('dishes', backref='sub_menus', cascade="all, delete-orphan")
 		elif model == 'dish':
 			self.model = dishes
-
-#engine = db.create_engine(f"postgresql+psycopg2://{login}:{password}@{host}/{db_name}")
-#metadata.create_all(engine)
-#request = engine.connect().execute(sub_menus.c.sub_menu_id == 1)
-
-#Достать записи
-#test_list = []
-#r = db_connection.execute(select(menus.c.title, menus.c.description))
-#for row in r:
-#	test_list.append(({'title':row[0]}, {'description': row[1]}))
-#print(test_list)
-
-#test = menus.insert().values(title='ete', description='erer')
-#db_connection.execute(test)
-#db_connection.commit()
