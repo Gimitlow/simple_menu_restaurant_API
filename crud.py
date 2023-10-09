@@ -1,6 +1,6 @@
 from db_config import DataBase
 from sqlalchemy import select
-import json
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import relationship
 
 menu_table = DataBase('menu')
@@ -30,11 +30,11 @@ class CRUD:
 					submenu_count = connection.execute(select(submenu_table.model).where(submenu_table.model.c.menu_id == row[0])).all()
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == row[0])).all()
 					
-					menu_list['id'] = row[0]
+					menu_list['id'] = str(row[0])
 					menu_list['title'] = row[1]
 					menu_list['description'] = row[2]
-					menu_list['count_submenus'] = len(submenu_count)
-					menu_list['count_dishes'] = len(dish_count)
+					menu_list['submenus_count'] = len(submenu_count)
+					menu_list['dishes_count'] = len(dish_count)
 
 					response.append(menu_list)
 				elif id == row[0]:
@@ -42,21 +42,26 @@ class CRUD:
 					submenu_count = connection.execute(select(submenu_table.model).where(submenu_table.model.c.menu_id == id)).all()
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == id)).all()
 					
-					menu_list['id'] = row[0]
+					menu_list['id'] = str(row[0])
 					menu_list['title'] = row[1]
 					menu_list['description'] = row[2]
-					menu_list['count_submenus'] = len(submenu_count)
-					menu_list['count_dishes'] = len(dish_count)
+					menu_list['submenus_count'] = len(submenu_count)
+					menu_list['dishes_count'] = len(dish_count)
 					
 					connection.close()
-					return menu_list
+					return JSONResponse(content=menu_list, status_code=200)
 
 			if response:
 				connection.close()
-				return response
+				return JSONResponse(content=response, status_code=200)
+			elif id:
+				connection.close()
+				response = {}
+				response['detail'] = 'menu not found'
+				return JSONResponse(content=response, status_code=404)
 			else:
 				connection.close()
-				return None
+				return JSONResponse(content=[], status_code=200)
 
 		def menu_add_record(self):
 			global menu_table
@@ -111,11 +116,11 @@ class CRUD:
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == row[1], dish_table.model.c.sub_menu_id == row[0])).all()
 					submenus_list = {}
 					
-					submenus_list['id'] = row[0]
+					submenus_list['id'] = str(row[0])
 					submenus_list['menu_id'] = row[1]
 					submenus_list['title'] = row[2]
 					submenus_list['description'] = row[3]
-					submenus_list['count_dishes'] = len(dish_count)
+					submenus_list['dishes_count'] = len(dish_count)
 
 					response.append(submenus_list)
 			else:
@@ -124,18 +129,24 @@ class CRUD:
 					submenus_list = {}
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == menu_id, dish_table.model.c.sub_menu_id == submenu_id)).all()
 					
-					submenus_list['id'] = row[0]
+					submenus_list['id'] = str(row[0])
 					submenus_list['menu_id'] = row[1]
 					submenus_list['title'] = row[2]
 					submenus_list['description'] = row[3]
-					submenus_list['count_dishes'] = len(dish_count)
+					submenus_list['dishes_count'] = len(dish_count)
 
 					return submenus_list
 
 			if response:
-				return response
+				return JSONResponse(content=response, status_code=201)
+			elif submenu_id:
+				connection.close()
+				response = {}
+				response['detail'] = 'submenu not found'
+				return JSONResponse(content=response, status_code=404)
 			else:
-				return 'Подменю не найдено'
+				connection.close()
+				return JSONResponse(content=[], status_code=200)
 
 		def submenu_add_record(self, menu_id=None):
 			global submenu_table
@@ -143,19 +154,19 @@ class CRUD:
 
 			r = connection.execute(select(menu_table.model.c.menu_id)).scalars().all()
 			if menu_id not in r:
-				return f'Нету Меню по Id:{menu_id} к которому можно создать Подменю'
+				return JSONResponse(content=f'Нету Меню по Id:{menu_id} к которому можно создать Подменю', status_code=201)
 
 			request = connection.execute(submenu_table.model.select().where(submenu_table.model.c.menu_id == menu_id))
 			for row in request:
 				if self.title == row[2]:
 					print(row[2])
-					return f'Подменю с названием {self.title} уже присутствует в Меню Id:{menu_id}'
+					return JSONResponse(content=f'Подменю с названием {self.title} уже присутствует в Меню Id:{menu_id}', status_code=201)
 
 			request = submenu_table.model.insert().values(menu_id=menu_id, title=self.title, description=self.description)
 			connection.execute(request)
 			connection.commit()
 			connection.close()
-			return f'Подменю {self.title} успешно добавлено'
+			return JSONResponse(content=f'Подменю {self.title} успешно добавлено', status_code=201)
 
 		def submenu_update_record(self, menu_id: int, submenus_id: int):
 			global submenu_table
@@ -205,9 +216,9 @@ class CRUD:
 				for row in request:
 					dish_list = {}
 
-					dish_list['id'] = row[0]
-					dish_list['sub_menu_id'] = row[1]
-					dish_list['menu_id'] = row[2]
+					dish_list['id'] = str(row[0])
+					dish_list['sub_menu_id'] = str(row[1])
+					dish_list['menu_id'] = str(row[2])
 					dish_list['title'] = row[3]
 					dish_list['description'] = row[4]
 					dish_list['price'] = "%.2f" % row[5]
@@ -218,42 +229,47 @@ class CRUD:
 				for row in request:
 					dish_list = {}
 
-					dish_list['id'] = row[0]
-					dish_list['sub_menu_id'] = row[1]
-					dish_list['menu_id'] = row[2]
+					dish_list['id'] = str(row[0])
+					dish_list['sub_menu_id'] = str(row[1])
+					dish_list['menu_id'] = str(row[2])
 					dish_list['title'] = row[3]
 					dish_list['description'] = row[4]
 					dish_list['price'] = "%.2f" % row[5]
 
-					return dish_list
+					return JSONResponse(content=dish_list, status_code=200)
 
 			if result:
 				connection.close()
-				return result
+				return JSONResponse(content=result, status_code=200)
+			elif dishes_id:
+				connection.close()
+				response = {}
+				response['detail'] = 'dish not found'
+				return JSONResponse(content=response, status_code=404)				
 			else:
 				connection.close()
-				return f'Ничего не найдено'
+				return JSONResponse(content=[], status_code=200)
 
 		def dish_add_record(self, menu_id: int, submenus_id: int):
 			global dish_table
 			connection = DataBase().connection
 
-			request = connection.execute(select(dish_table.model).where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id)).all()
+			request = connection.execute(select(submenu_table.model).where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id)).all()
 			if not request:
-				return "Нету такого подменю и меню"			
+				return JSONResponse(content="Нету такого подменю и меню", status_code=200)			
 
 			request = connection.execute(dish_table.model.select().where(dish_table.model.c.menu_id == menu_id))
 			for row in request:
 				if self.title == row[3]:
 					print(row[3])
-					return f'Блюдо с названием {self.title} уже присутствует в Подменю Id{submenus_id}'
+					return JSONResponse(content=f'Блюдо с названием {self.title} уже присутствует в Подменю Id{submenus_id}', status_code=201)
 
 			request = dish_table.model.insert().values(sub_menu_id=submenus_id, menu_id=menu_id, title=self.title, description=self.description, price=self.price)
 			
 			connection.execute(request)
 			connection.commit()
 			connection.close()
-			return f'Блюдо {self.title} успешно добавлено в Меню Id:{menu_id}, Подменю Id:{submenus_id}'
+			return JSONResponse(content=f'Блюдо {self.title} успешно добавлено в Меню Id:{menu_id}, Подменю Id:{submenus_id}', status_code=201)
 
 		def dish_update_record(self, menu_id: int, submenus_id: int, dishes_id: int):
 			global dish_table
@@ -263,7 +279,7 @@ class CRUD:
 			if not request:
 				return f'Не найдено Блюдо Id:{submenus_id} в Подменю Id:{submenus_id} в Меню по Id:{menu_id}'
 
-			request = dish_table.model.update().where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id).values(title=self.title, description=self.description)
+			request = dish_table.model.update().where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id).values(title=self.title, description=self.description, price=self.price)
 			result = connection.execute(request)
 			connection.commit()
 			connection.close()	

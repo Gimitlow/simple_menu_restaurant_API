@@ -9,7 +9,7 @@ crud = CRUD()
 
 #МЕНЮ 
 #Просмотр списка меню
-@app.get("/api/v1/menus")
+@app.get("/api/v1/menus", status_code=200)
 def get_menus():
 	records = crud._MenuInterface().menu_get()
 	if records:
@@ -20,7 +20,6 @@ def get_menus():
 #просмотр определенного меню
 @app.get("/api/v1/menus/{menus_id}")
 def get_menu_record(menus_id: int):
-	print(menus_id)
 	result = crud._MenuInterface().menu_get(menus_id)
 	return result
 
