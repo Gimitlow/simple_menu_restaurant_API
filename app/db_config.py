@@ -1,11 +1,10 @@
 import sqlalchemy as db 
 from sqlalchemy import Table, Column, Integer, String, DECIMAL, ForeignKey
 from sqlalchemy.orm import relationship, backref
+import os
 
 #параметры коннекта
-login = 'postgres'
-password = 'admin'
-host = 'localhost'
+host = os.environ.get('PROD_DATABASE_CONNECTION')
 db_name = 'restaurant_api'
 
 metadata = db.MetaData()
@@ -39,7 +38,7 @@ dishes = Table('dishes', metadata,
 #класс для передачи копии модели таблицы, требуется для генерации запроса
 class DataBase:
 	def __init__(self, model=None):
-		engine = db.create_engine(f"postgresql+psycopg2://{login}:{password}@{host}/{db_name}")
+		engine = db.create_engine(f"{host}")
 		metadata.create_all(engine)
 		
 		self.connection = engine.connect()

@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  test:
+    container_name: api_test
+    image: test
+    build: 
+      context: ./test
+    env_file:
+      - .env
+    ports: 
+      - 3000:3000
+    expose:
+      - 3000
+    networks:
+      - api_network
+    depends_on:
+      - api
+  api:
+    container_name: api
+    image: api
+    build: 
+      context: ./app
+    env_file:
+      - .env
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn main:app --host 0.0.0.0'
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+    networks:
+      - api_network
+
+  db:
+    image: postgres:15.1-alpine
+    container_name: database
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    expose:
+      - 5432
+    ports:
+      - 5432:5432
+    networks:
+      - api_network
+
+networks:
+  api_network:
+
+volumes:
+  postgres_data:

@@ -70,8 +70,16 @@ class CRUD:
 			request = menu_table.model.insert().values(title=self.title, description=self.description)
 			connection.execute(request)
 			connection.commit()
+
+			record = connection.execute(select(menu_table.model.c.menu_id, menu_table.model.c.title, menu_table.model.c.description).order_by(menu_table.model.c.menu_id.desc())).first()
+			response = {
+				'id':str(record[0]),
+				'title':record[1],
+				'description':record[2]
+			}
+
 			connection.close()
-			return f'Меню {self.title} успешно добавлено'
+			return JSONResponse(content=response, status_code=201)
 
 		def menu_update_record(self, id=None):
 			global menu_table
@@ -116,7 +124,7 @@ class CRUD:
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == row[1], dish_table.model.c.sub_menu_id == row[0])).all()
 					submenus_list = {}
 					
-					submenus_list['id'] = str(row[0])
+					submenus_list['id'] = row[0]
 					submenus_list['menu_id'] = row[1]
 					submenus_list['title'] = row[2]
 					submenus_list['description'] = row[3]
@@ -138,7 +146,7 @@ class CRUD:
 					return submenus_list
 
 			if response:
-				return JSONResponse(content=response, status_code=201)
+				return JSONResponse(content=response, status_code=200)
 			elif submenu_id:
 				connection.close()
 				response = {}
@@ -164,9 +172,21 @@ class CRUD:
 
 			request = submenu_table.model.insert().values(menu_id=menu_id, title=self.title, description=self.description)
 			connection.execute(request)
+
+			record = connection.execute(select(submenu_table.model.c.sub_menu_id, submenu_table.model.c.menu_id, submenu_table.model.c.title, submenu_table.model.c.description).where(submenu_table.model.c.menu_id == menu_id).order_by(submenu_table.model.c.sub_menu_id.desc())).first()
+			req_dish = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == menu_id, dish_table.model.c.sub_menu_id == record[0])).all()
+			
+			response = {
+				'id': str(record[0]),
+				'menu_id': record[1],
+				'title': record[2],
+				'description': record[3],
+				'dish_count': len(req_dish)
+			}
+
 			connection.commit()
 			connection.close()
-			return JSONResponse(content=f'Подменю {self.title} успешно добавлено', status_code=201)
+			return JSONResponse(content=response, status_code=201)
 
 		def submenu_update_record(self, menu_id: int, submenus_id: int):
 			global submenu_table
@@ -216,7 +236,7 @@ class CRUD:
 				for row in request:
 					dish_list = {}
 
-					dish_list['id'] = str(row[0])
+					dish_list['id'] = row[0]
 					dish_list['sub_menu_id'] = str(row[1])
 					dish_list['menu_id'] = str(row[2])
 					dish_list['title'] = row[3]
@@ -268,8 +288,19 @@ class CRUD:
 			
 			connection.execute(request)
 			connection.commit()
+
+			request = connection.execute(dish_table.model.select().where(dish_table.model.c.sub_menu_id == submenus_id, dish_table.model.c.menu_id == menu_id, dish_table.model.c.title == self.title, dish_table.model.c.description == self.description, dish_table.model.c.price == self.price)).all()
+			response = {
+				'id':str(request[0][0]),
+				'sub_menu_id':request[0][1],
+				'menu_id':request[0][2],
+				'title':request[0][3],
+				'description':request[0][4],
+				'price':str(request[0][5])
+			}
+
 			connection.close()
-			return JSONResponse(content=f'Блюдо {self.title} успешно добавлено в Меню Id:{menu_id}, Подменю Id:{submenus_id}', status_code=201)
+			return JSONResponse(content=response, status_code=201)
 
 		def dish_update_record(self, menu_id: int, submenus_id: int, dishes_id: int):
 			global dish_table
