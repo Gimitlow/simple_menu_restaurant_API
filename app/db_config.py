@@ -4,8 +4,10 @@ from sqlalchemy.orm import relationship, backref
 import os
 
 #параметры коннекта
-host = os.environ.get('PROD_DATABASE_CONNECTION')
-db_name = 'restaurant_api'
+db_host = os.environ.get('HOST')
+db_name = os.environ.get('POSTGRES_DB')
+db_user = os.environ.get('POSTGRES_USER')
+db_password = os.environ.get('POSTGRES_PASSWORD')
 
 metadata = db.MetaData()
 
@@ -38,7 +40,7 @@ dishes = Table('dishes', metadata,
 #класс для передачи копии модели таблицы, требуется для генерации запроса
 class DataBase:
 	def __init__(self, model=None):
-		engine = db.create_engine(f"{host}")
+		engine = db.create_engine(f"postgresql://{db_user}:{db_password}@{db_host}:5432/{db_name}")
 		metadata.create_all(engine)
 		
 		self.connection = engine.connect()
