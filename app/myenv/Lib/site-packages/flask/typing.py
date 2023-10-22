@@ -9,7 +9,7 @@ if t.TYPE_CHECKING:  # pragma: no cover
 
 # The possible types that are directly convertible or are a Response object.
 ResponseValue = t.Union[
-    "Response",
+    'Response',
     str,
     bytes,
     t.List[t.Any],
@@ -25,7 +25,7 @@ HeaderValue = t.Union[str, t.List[str], t.Tuple[str, ...]]
 
 # the possible types for HTTP headers
 HeadersValue = t.Union[
-    "Headers",
+    'Headers',
     t.Mapping[str, HeaderValue],
     t.Sequence[t.Tuple[str, HeaderValue]],
 ]
@@ -36,13 +36,13 @@ ResponseReturnValue = t.Union[
     t.Tuple[ResponseValue, HeadersValue],
     t.Tuple[ResponseValue, int],
     t.Tuple[ResponseValue, int, HeadersValue],
-    "WSGIApplication",
+    'WSGIApplication',
 ]
 
 # Allow any subclass of werkzeug.Response, such as the one from Flask,
 # as a callback argument. Using werkzeug.Response directly makes a
 # callback annotated with flask.Response fail type checking.
-ResponseClass = t.TypeVar("ResponseClass", bound="Response")
+ResponseClass = t.TypeVar('ResponseClass', bound='Response')
 
 AppOrBlueprintKey = t.Optional[str]  # The App key is None, whereas blueprints are named
 AfterRequestCallable = t.Union[

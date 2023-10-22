@@ -21,7 +21,7 @@ def host_is_trusted(hostname: str, trusted_list: t.Iterable[str]) -> bool:
         return False
 
     try:
-        hostname = hostname.partition(":")[0].encode("idna").decode("ascii")
+        hostname = hostname.partition(':')[0].encode('idna').decode('ascii')
     except UnicodeEncodeError:
         return False
 
@@ -29,18 +29,18 @@ def host_is_trusted(hostname: str, trusted_list: t.Iterable[str]) -> bool:
         trusted_list = [trusted_list]
 
     for ref in trusted_list:
-        if ref.startswith("."):
+        if ref.startswith('.'):
             ref = ref[1:]
             suffix_match = True
         else:
             suffix_match = False
 
         try:
-            ref = ref.partition(":")[0].encode("idna").decode("ascii")
+            ref = ref.partition(':')[0].encode('idna').decode('ascii')
         except UnicodeEncodeError:
             return False
 
-        if ref == hostname or (suffix_match and hostname.endswith(f".{ref}")):
+        if ref == hostname or (suffix_match and hostname.endswith(f'.{ref}')):
             return True
 
     return False
@@ -72,7 +72,7 @@ def get_host(
     :raise ~werkzeug.exceptions.SecurityError: If the host is not
         trusted.
     """
-    host = ""
+    host = ''
 
     if host_header is not None:
         host = host_header
@@ -80,16 +80,16 @@ def get_host(
         host = server[0]
 
         if server[1] is not None:
-            host = f"{host}:{server[1]}"
+            host = f'{host}:{server[1]}'
 
-    if scheme in {"http", "ws"} and host.endswith(":80"):
+    if scheme in {'http', 'ws'} and host.endswith(':80'):
         host = host[:-3]
-    elif scheme in {"https", "wss"} and host.endswith(":443"):
+    elif scheme in {'https', 'wss'} and host.endswith(':443'):
         host = host[:-4]
 
     if trusted_hosts is not None:
         if not host_is_trusted(host, trusted_hosts):
-            raise SecurityError(f"Host {host!r} is not trusted.")
+            raise SecurityError(f'Host {host!r} is not trusted.')
 
     return host
 
@@ -114,27 +114,27 @@ def get_current_url(
     :param path: The path part of the URL after ``root_path``.
     :param query_string: The portion of the URL after the "?".
     """
-    url = [scheme, "://", host]
+    url = [scheme, '://', host]
 
     if root_path is None:
-        url.append("/")
-        return uri_to_iri("".join(url))
+        url.append('/')
+        return uri_to_iri(''.join(url))
 
     # safe = https://url.spec.whatwg.org/#url-path-segment-string
     # as well as percent for things that are already quoted
-    url.append(quote(root_path.rstrip("/"), safe="!$&'()*+,/:;=@%"))
-    url.append("/")
+    url.append(quote(root_path.rstrip('/'), safe="!$&'()*+,/:;=@%"))
+    url.append('/')
 
     if path is None:
-        return uri_to_iri("".join(url))
+        return uri_to_iri(''.join(url))
 
-    url.append(quote(path.lstrip("/"), safe="!$&'()*+,/:;=@%"))
+    url.append(quote(path.lstrip('/'), safe="!$&'()*+,/:;=@%"))
 
     if query_string:
-        url.append("?")
+        url.append('?')
         url.append(quote(query_string, safe="!$&'()*+,/:;=?@%"))
 
-    return uri_to_iri("".join(url))
+    return uri_to_iri(''.join(url))
 
 
 def get_content_length(
@@ -150,7 +150,7 @@ def get_content_length(
 
     .. versionadded:: 2.2
     """
-    if http_transfer_encoding == "chunked" or http_content_length is None:
+    if http_transfer_encoding == 'chunked' or http_content_length is None:
         return None
 
     try:

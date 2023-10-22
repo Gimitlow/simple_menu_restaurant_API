@@ -58,11 +58,11 @@ class Accept(ImmutableList):
 
     def _specificity(self, value):
         """Returns a tuple describing the value's specificity."""
-        return (value != "*",)
+        return (value != '*',)
 
     def _value_matches(self, value, item):
         """Check if a value matches a given accept item."""
-        return item == "*" or item.lower() == value.lower()
+        return item == '*' or item.lower() == value.lower()
 
     def __getitem__(self, key):
         """Besides index lookup (getting item n) you can also pass it a string
@@ -92,8 +92,8 @@ class Accept(ImmutableList):
         return False
 
     def __repr__(self):
-        pairs_str = ", ".join(f"({x!r}, {y})" for x, y in self)
-        return f"{type(self).__name__}([{pairs_str}])"
+        pairs_str = ', '.join(f'({x!r}, {y})' for x, y in self)
+        return f'{type(self).__name__}([{pairs_str}])'
 
     def index(self, key):
         """Get the position of an entry or raise :exc:`ValueError`.
@@ -131,9 +131,9 @@ class Accept(ImmutableList):
         result = []
         for value, quality in self:
             if quality != 1:
-                value = f"{value};q={quality}"
+                value = f'{value};q={quality}'
             result.append(value)
-        return ",".join(result)
+        return ','.join(result)
 
     def __str__(self):
         return self.to_header()
@@ -178,7 +178,7 @@ class Accept(ImmutableList):
             return self[0][0]
 
 
-_mime_split_re = re.compile(r"/|(?:\s*;\s*)")
+_mime_split_re = re.compile(r'/|(?:\s*;\s*)')
 
 
 def _normalize_mime(value):
@@ -191,17 +191,17 @@ class MIMEAccept(Accept):
     """
 
     def _specificity(self, value):
-        return tuple(x != "*" for x in _mime_split_re.split(value))
+        return tuple(x != '*' for x in _mime_split_re.split(value))
 
     def _value_matches(self, value, item):
         # item comes from the client, can't match if it's invalid.
-        if "/" not in item:
+        if '/' not in item:
             return False
 
         # value comes from the application, tell the developer when it
         # doesn't look valid.
-        if "/" not in value:
-            raise ValueError(f"invalid mimetype {value!r}")
+        if '/' not in value:
+            raise ValueError(f'invalid mimetype {value!r}')
 
         # Split the match value into type, subtype, and a sorted list of parameters.
         normalized_value = _normalize_mime(value)
@@ -209,8 +209,8 @@ class MIMEAccept(Accept):
         value_params = sorted(normalized_value[2:])
 
         # "*/*" is the only valid value that can start with "*".
-        if value_type == "*" and value_subtype != "*":
-            raise ValueError(f"invalid mimetype {value!r}")
+        if value_type == '*' and value_subtype != '*':
+            raise ValueError(f'invalid mimetype {value!r}')
 
         # Split the accept item into type, subtype, and parameters.
         normalized_item = _normalize_mime(item)
@@ -218,17 +218,17 @@ class MIMEAccept(Accept):
         item_params = sorted(normalized_item[2:])
 
         # "*/not-*" from the client is invalid, can't match.
-        if item_type == "*" and item_subtype != "*":
+        if item_type == '*' and item_subtype != '*':
             return False
 
         return (
-            (item_type == "*" and item_subtype == "*")
-            or (value_type == "*" and value_subtype == "*")
+            (item_type == '*' and item_subtype == '*')
+            or (value_type == '*' and value_subtype == '*')
         ) or (
             item_type == value_type
             and (
-                item_subtype == "*"
-                or value_subtype == "*"
+                item_subtype == '*'
+                or value_subtype == '*'
                 or (item_subtype == value_subtype and item_params == value_params)
             )
         )
@@ -237,21 +237,21 @@ class MIMEAccept(Accept):
     def accept_html(self):
         """True if this object accepts HTML."""
         return (
-            "text/html" in self or "application/xhtml+xml" in self or self.accept_xhtml
+            'text/html' in self or 'application/xhtml+xml' in self or self.accept_xhtml
         )
 
     @property
     def accept_xhtml(self):
         """True if this object accepts XHTML."""
-        return "application/xhtml+xml" in self or "application/xml" in self
+        return 'application/xhtml+xml' in self or 'application/xml' in self
 
     @property
     def accept_json(self):
         """True if this object accepts JSON."""
-        return "application/json" in self
+        return 'application/json' in self
 
 
-_locale_delim_re = re.compile(r"[_-]")
+_locale_delim_re = re.compile(r'[_-]')
 
 
 def _normalize_lang(value):
@@ -263,7 +263,7 @@ class LanguageAccept(Accept):
     """Like :class:`Accept` but with normalization for language tags."""
 
     def _value_matches(self, value, item):
-        return item == "*" or _normalize_lang(value) == _normalize_lang(item)
+        return item == '*' or _normalize_lang(value) == _normalize_lang(item)
 
     def best_match(self, matches, default=None):
         """Given a list of supported values, finds the best match from
@@ -323,4 +323,4 @@ class CharsetAccept(Accept):
             except LookupError:
                 return name.lower()
 
-        return item == "*" or _normalize(value) == _normalize(item)
+        return item == '*' or _normalize(value) == _normalize(item)

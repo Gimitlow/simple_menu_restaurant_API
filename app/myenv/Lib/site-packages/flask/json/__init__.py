@@ -40,7 +40,7 @@ def dumps(obj: t.Any, **kwargs: t.Any) -> str:
     if current_app:
         return current_app.json.dumps(obj, **kwargs)
 
-    kwargs.setdefault("default", _default)
+    kwargs.setdefault('default', _default)
     return _json.dumps(obj, **kwargs)
 
 
@@ -70,7 +70,7 @@ def dump(obj: t.Any, fp: t.IO[str], **kwargs: t.Any) -> None:
     if current_app:
         current_app.json.dump(obj, fp, **kwargs)
     else:
-        kwargs.setdefault("default", _default)
+        kwargs.setdefault('default', _default)
         _json.dump(obj, fp, **kwargs)
 
 

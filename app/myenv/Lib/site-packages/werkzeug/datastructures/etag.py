@@ -59,14 +59,14 @@ class ETags(Collection):
     def to_header(self):
         """Convert the etags set into a HTTP header string."""
         if self.star_tag:
-            return "*"
-        return ", ".join(
+            return '*'
+        return ', '.join(
             [f'"{x}"' for x in self._strong] + [f'W/"{x}"' for x in self._weak]
         )
 
     def __call__(self, etag=None, data=None, include_weak=False):
         if [etag, data].count(None) != 1:
-            raise TypeError("either tag or data required, but at least one")
+            raise TypeError('either tag or data required, but at least one')
         if etag is None:
             from ..http import generate_etag
 
@@ -92,4 +92,4 @@ class ETags(Collection):
         return self.contains(etag)
 
     def __repr__(self):
-        return f"<{type(self).__name__} {str(self)!r}>"
+        return f'<{type(self).__name__} {str(self)!r}>'

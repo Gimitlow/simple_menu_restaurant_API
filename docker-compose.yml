@@ -4,21 +4,21 @@ services:
   test:
     container_name: api_test
     image: test
-    build: 
+    build:
       context: ./test
     env_file:
       - .env
-    ports: 
+    ports:
       - 3000:3000
     expose:
       - 3000
     networks:
       - api_network
-  
+
   api:
     container_name: api
     image: api
-    build: 
+    build:
       context: ./app
     env_file:
       - .env
@@ -35,7 +35,7 @@ services:
         condition: service_healthy
     networks:
       - api_network
-  
+
   db:
     image: postgres:15.1-alpine
     container_name: database
@@ -70,7 +70,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     entrypoint: redis-server --appendonly yes
-    volumes: 
+    volumes:
       - cache:/data
     networks:
       - api_network

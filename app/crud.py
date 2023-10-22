@@ -1,8 +1,8 @@
-from db_config import DataBase
-from sqlalchemy import select
-from fastapi.responses import JSONResponse
-from sqlalchemy.orm import relationship
 from cache_engine import RedisMemCache
+from db_config import DataBase
+from fastapi.responses import JSONResponse
+from sqlalchemy import select
+from sqlalchemy.orm import relationship
 
 #ссылки на модели таблиц
 menu_table = DataBase('menu')
@@ -30,7 +30,7 @@ class CRUD:
 					return cache
 
 			connection = DataBase().connection
-			
+
 			response = []
 
 			request = connection.execute(select(menu_table.model.c.menu_id, menu_table.model.c.title, menu_table.model.c.description))
@@ -39,7 +39,7 @@ class CRUD:
 					menu_list = {}
 					submenu_count = connection.execute(select(submenu_table.model).where(submenu_table.model.c.menu_id == row[0])).all()
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == row[0])).all()
-					
+
 					menu_list['id'] = str(row[0])
 					menu_list['title'] = row[1]
 					menu_list['description'] = row[2]
@@ -52,15 +52,15 @@ class CRUD:
 					menu_list = {}
 					submenu_count = connection.execute(select(submenu_table.model).where(submenu_table.model.c.menu_id == id)).all()
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == id)).all()
-					
+
 					menu_list['id'] = str(row[0])
 					menu_list['title'] = row[1]
 					menu_list['description'] = row[2]
 					menu_list['submenus_count'] = len(submenu_count)
 					menu_list['dishes_count'] = len(dish_count)
-					
+
 					connection.close()
-					redis_cache._MenuMemCache().cache_set_menu(id, menu_list)					
+					redis_cache._MenuMemCache().cache_set_menu(id, menu_list)
 					return JSONResponse(content=menu_list, status_code=200)
 
 			if response:
@@ -143,7 +143,7 @@ class CRUD:
 				for row in request:
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == row[1], dish_table.model.c.sub_menu_id == row[0])).all()
 					submenus_list = {}
-					
+
 					submenus_list['id'] = row[0]
 					submenus_list['menu_id'] = row[1]
 					submenus_list['title'] = row[2]
@@ -157,7 +157,7 @@ class CRUD:
 				for row in request:
 					submenus_list = {}
 					dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == menu_id, dish_table.model.c.sub_menu_id == submenu_id)).all()
-					
+
 					submenus_list['id'] = str(row[0])
 					submenus_list['menu_id'] = row[1]
 					submenus_list['title'] = row[2]
@@ -197,7 +197,7 @@ class CRUD:
 
 			record = connection.execute(select(submenu_table.model.c.sub_menu_id, submenu_table.model.c.menu_id, submenu_table.model.c.title, submenu_table.model.c.description).where(submenu_table.model.c.menu_id == menu_id).order_by(submenu_table.model.c.sub_menu_id.desc())).first()
 			req_dish = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == menu_id, dish_table.model.c.sub_menu_id == record[0])).all()
-			
+
 			response = {
 				'id': str(record[0]),
 				'menu_id': record[1],
@@ -239,7 +239,7 @@ class CRUD:
 
 			connection.execute(dish_table.model.delete().where(dish_table.model.c.menu_id == menu_id, dish_table.model.c.sub_menu_id == submenus_id))
 			connection.execute(submenu_table.model.delete().where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id))
-			
+
 			redis_cache._SubmenuMemCache().cache_del_submenu(submenus_id, menu_id)
 
 			connection.commit()
@@ -269,7 +269,7 @@ class CRUD:
 					dish_list['menu_id'] = str(row[2])
 					dish_list['title'] = row[3]
 					dish_list['description'] = row[4]
-					dish_list['price'] = "%.2f" % row[5]
+					dish_list['price'] = '%.2f' % row[5]
 
 					result.append(dish_list)
 			else:
@@ -286,7 +286,7 @@ class CRUD:
 					dish_list['menu_id'] = str(row[2])
 					dish_list['title'] = row[3]
 					dish_list['description'] = row[4]
-					dish_list['price'] = "%.2f" % row[5]
+					dish_list['price'] = '%.2f' % row[5]
 
 					redis_cache._DishMemCache().cache_set_dish(dishes_id, submenus_id, menu_id, dish_list)
 					return JSONResponse(content=dish_list, status_code=200)
@@ -298,7 +298,7 @@ class CRUD:
 				connection.close()
 				response = {}
 				response['detail'] = 'dish not found'
-				return JSONResponse(content=response, status_code=404)				
+				return JSONResponse(content=response, status_code=404)
 			else:
 				connection.close()
 				return JSONResponse(content=[], status_code=200)
@@ -309,7 +309,7 @@ class CRUD:
 
 			request = connection.execute(select(submenu_table.model).where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id)).all()
 			if not request:
-				return JSONResponse(content="Нету такого подменю и меню", status_code=200)			
+				return JSONResponse(content='Нету такого подменю и меню', status_code=200)
 
 			request = connection.execute(dish_table.model.select().where(dish_table.model.c.menu_id == menu_id))
 			for row in request:
@@ -318,7 +318,7 @@ class CRUD:
 					return JSONResponse(content=f'Блюдо с названием {self.title} уже присутствует в Подменю Id{submenus_id}', status_code=201)
 
 			request = dish_table.model.insert().values(sub_menu_id=submenus_id, menu_id=menu_id, title=self.title, description=self.description, price=self.price)
-			
+
 			connection.execute(request)
 			connection.commit()
 
@@ -351,7 +351,7 @@ class CRUD:
 
 			redis_cache._DishMemCache().cache_update_dish(dishes_id, submenus_id, menu_id, self.title, self.description, self.price)
 
-			connection.close()	
+			connection.close()
 
 			return f'Обновлено Блюдо Id:{submenus_id} в Подменю Id:{submenus_id} в Меню по Id:{menu_id}'
 

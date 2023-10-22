@@ -6,7 +6,7 @@ from .._internal import _missing
 
 
 def is_immutable(self):
-    raise TypeError(f"{type(self).__name__!r} objects are immutable")
+    raise TypeError(f'{type(self).__name__!r} objects are immutable')
 
 
 class ImmutableListMixin:
@@ -235,8 +235,8 @@ class UpdateDictMixin(dict):
             self.on_update(self)
         return rv
 
-    __setitem__ = _calls_update("__setitem__")
-    __delitem__ = _calls_update("__delitem__")
-    clear = _calls_update("clear")
-    popitem = _calls_update("popitem")
-    update = _calls_update("update")
+    __setitem__ = _calls_update('__setitem__')
+    __delitem__ = _calls_update('__delitem__')
+    clear = _calls_update('clear')
+    popitem = _calls_update('popitem')
+    update = _calls_update('update')
