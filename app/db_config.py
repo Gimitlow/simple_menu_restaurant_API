@@ -8,6 +8,8 @@ db_host = os.environ.get('HOST')
 db_name = os.environ.get('POSTGRES_DB')
 db_user = os.environ.get('POSTGRES_USER')
 db_password = os.environ.get('POSTGRES_PASSWORD')
+#f"postgresql://{db_user}:{db_password}@{db_host}:5432/{db_name}"
+#f"postgresql://admin:admin@localhost:5432/restuarant_api"
 
 metadata = db.MetaData()
 

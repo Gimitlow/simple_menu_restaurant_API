@@ -2,10 +2,14 @@ from db_config import DataBase
 from sqlalchemy import select
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import relationship
+from cache_engine import RedisMemCache
 
+#ссылки на модели таблиц
 menu_table = DataBase('menu')
 submenu_table = DataBase('sub_menu')
 dish_table = DataBase('dish')
+
+redis_cache = RedisMemCache()
 
 class CRUD:
 
@@ -19,6 +23,12 @@ class CRUD:
 
 		def menu_get(self, id=None):
 			global menu_table
+
+			if id:
+				cache = redis_cache._MenuMemCache().cache_get_menu(str(id))
+				if cache:
+					return cache
+
 			connection = DataBase().connection
 			
 			response = []
@@ -36,6 +46,7 @@ class CRUD:
 					menu_list['submenus_count'] = len(submenu_count)
 					menu_list['dishes_count'] = len(dish_count)
 
+					redis_cache._MenuMemCache().cache_set_menu(str(row[0]), menu_list)
 					response.append(menu_list)
 				elif id == row[0]:
 					menu_list = {}
@@ -49,6 +60,7 @@ class CRUD:
 					menu_list['dishes_count'] = len(dish_count)
 					
 					connection.close()
+					redis_cache._MenuMemCache().cache_set_menu(id, menu_list)					
 					return JSONResponse(content=menu_list, status_code=200)
 
 			if response:
@@ -90,6 +102,8 @@ class CRUD:
 			connection.execute(request)
 			connection.commit()
 			connection.close()
+
+			redis_cache._MenuMemCache().cache_update_menu(id, self.title, self.description)
 			return f'Запись Меню Id:{id} обнавлена'
 
 		def menu_delete_record(self, id: int):
@@ -102,6 +116,7 @@ class CRUD:
 
 			connection.commit()
 			connection.close()
+			redis_cache._MenuMemCache().cache_del_menu(id)
 			return f'Запись Меню Id:{id} удалена'
 
 	class _SubMenuInterface:
@@ -115,6 +130,11 @@ class CRUD:
 			global submenu_table
 			connection = DataBase().connection
 			response = []
+
+			if menu_id and submenu_id:
+				cache = redis_cache._SubmenuMemCache().cache_get_submenu(str(menu_id), str(submenu_id))
+				if cache:
+					return cache
 
 			dish_count = connection.execute(select(dish_table.model).where(dish_table.model.c.menu_id == menu_id, dish_table.model.c.sub_menu_id == submenu_id)).all()
 
@@ -130,6 +150,7 @@ class CRUD:
 					submenus_list['description'] = row[3]
 					submenus_list['dishes_count'] = len(dish_count)
 
+					redis_cache._SubmenuMemCache().cache_set_submenu(str(row[0]), str(row[1]), submenus_list)
 					response.append(submenus_list)
 			else:
 				request = connection.execute(select(submenu_table.model.c.sub_menu_id, submenu_table.model.c.menu_id, submenu_table.model.c.title, submenu_table.model.c.description).where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenu_id)).all()
@@ -143,6 +164,7 @@ class CRUD:
 					submenus_list['description'] = row[3]
 					submenus_list['dishes_count'] = len(dish_count)
 
+					redis_cache._SubmenuMemCache().cache_set_submenu(str(row[0]), str(row[1]), submenus_list)
 					return submenus_list
 
 			if response:
@@ -186,6 +208,7 @@ class CRUD:
 
 			connection.commit()
 			connection.close()
+			redis_cache._SubmenuMemCache().cache_set_submenu(str(record[0]), str(record[1]), response)
 			return JSONResponse(content=response, status_code=201)
 
 		def submenu_update_record(self, menu_id: int, submenus_id: int):
@@ -200,6 +223,8 @@ class CRUD:
 
 			request = submenu_table.model.update().where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id).values(title=self.title, description=self.description)
 			r = connection.execute(request)
+
+			redis_cache._SubmenuMemCache().cache_update_submenu(submenus_id, menu_id, self.title, self.description)
 			connection.commit()
 			connection.close()
 
@@ -214,6 +239,9 @@ class CRUD:
 
 			connection.execute(dish_table.model.delete().where(dish_table.model.c.menu_id == menu_id, dish_table.model.c.sub_menu_id == submenus_id))
 			connection.execute(submenu_table.model.delete().where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id))
+			
+			redis_cache._SubmenuMemCache().cache_del_submenu(submenus_id, menu_id)
+
 			connection.commit()
 			connection.close()
 			return f'Запись Подменю Id:{submenus_id} удалена из Меню Id:{submenus_id}'
@@ -245,6 +273,10 @@ class CRUD:
 
 					result.append(dish_list)
 			else:
+				cache = redis_cache._DishMemCache().cache_get_dish(dishes_id, submenus_id, menu_id)
+				if cache:
+					return JSONResponse(content=cache, status_code=200)
+
 				request = connection.execute(dish_table.model.select().where(dish_table.model.c.menu_id==menu_id, dish_table.model.c.sub_menu_id==submenus_id, dish_table.model.c.dish_id==dishes_id))
 				for row in request:
 					dish_list = {}
@@ -256,6 +288,7 @@ class CRUD:
 					dish_list['description'] = row[4]
 					dish_list['price'] = "%.2f" % row[5]
 
+					redis_cache._DishMemCache().cache_set_dish(dishes_id, submenus_id, menu_id, dish_list)
 					return JSONResponse(content=dish_list, status_code=200)
 
 			if result:
@@ -299,6 +332,8 @@ class CRUD:
 				'price':str(request[0][5])
 			}
 
+			redis_cache._DishMemCache().cache_set_dish(request[0][0], request[0][1], request[0][2], response)
+
 			connection.close()
 			return JSONResponse(content=response, status_code=201)
 
@@ -313,6 +348,9 @@ class CRUD:
 			request = dish_table.model.update().where(submenu_table.model.c.menu_id == menu_id, submenu_table.model.c.sub_menu_id == submenus_id).values(title=self.title, description=self.description, price=self.price)
 			result = connection.execute(request)
 			connection.commit()
+
+			redis_cache._DishMemCache().cache_update_dish(dishes_id, submenus_id, menu_id, self.title, self.description, self.price)
+
 			connection.close()	
 
 			return f'Обновлено Блюдо Id:{submenus_id} в Подменю Id:{submenus_id} в Меню по Id:{menu_id}'
@@ -323,5 +361,8 @@ class CRUD:
 
 			request = connection.execute(dish_table.model.delete().where(dish_table.model.c.menu_id == menu_id, dish_table.model.c.sub_menu_id == submenus_id, dish_table.model.c.dish_id == dishes_id))
 			connection.commit()
+
+			redis_cache._DishMemCache().cache_del_dish(dishes_id, submenus_id, menu_id)
+
 			connection.close()
 			return f'Запись блюда Id:{dishes_id} успешно удалена из Меню Id:{menu_id}, Подменю Id:{submenus_id}'
