@@ -37,3 +37,4 @@ websockets==11.0.3
 Werkzeug==2.3.7
 asyncpg==0.27.0
 redis==5.0.1
+asyncio-redis==0.16.0 
