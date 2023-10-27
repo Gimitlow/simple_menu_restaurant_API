@@ -3,14 +3,13 @@ import os
 
 import redis.asyncio as redis
 
-# подключение редиса
-# host = os.environ.get('REDIS_HOST')
-# port = os.environ.get('REDIS_PORT')
-redis_cache = redis.Redis(host='localhost', port=6379, db=0)
+host = os.environ.get('REDIS_HOST')
+redis_cache = redis.Redis(host=host, port=6379, db=0)
 
 
 class RedisMemCache:
 
+    # кэширование для меню
     class _MenuMemCache:
 
         async def cache_get_menu(self, id: str):
@@ -34,7 +33,7 @@ class RedisMemCache:
                 cache['title'] = title
                 cache['description'] = description
                 await redis_cache.set(f'Menu-{id}', json.dumps(cache))
-                
+
                 redis_cache.close()
                 print(f'Menu {id} cache updated.')
 
@@ -44,6 +43,7 @@ class RedisMemCache:
                 await redis_cache.delete(f'Menu-{id}')
                 print(f'Menu {id} delete from cache.')
 
+    # кэширование для подменю
     class _SubmenuMemCache:
 
         async def cache_get_submenu(self, submenu_id: str, menu_id: str):
@@ -62,7 +62,9 @@ class RedisMemCache:
             redis_cache.close()
 
         async def cache_update_submenu(self, submenu_id: str, menu_id: str, title: str, description: str):
-            cache = json.loads(await redis_cache.get(f'Menu-{menu_id}-Submenu-{submenu_id}'))
+            print(f'{submenu_id} {menu_id} {title} {description}')
+            cache = json.loads(await redis_cache.get(f'Menu-{str(menu_id)}-Submenu-{str(submenu_id)}'))
+            print(cache)
             if cache:
                 cache['title'] = title
                 cache['description'] = description
@@ -76,6 +78,7 @@ class RedisMemCache:
                 await redis_cache.delete(f'Menu-{menu_id}-Submenu-{submenu_id}')
                 print(f'Submenu {submenu_id} from Menu {menu_id} delete from cache.')
 
+    # кэширование для блюд
     class _DishMemCache:
 
         async def cache_get_dish(self, dish_id: str, submenu_id: str, menu_id: str):

@@ -2,7 +2,7 @@ import asyncio
 import os
 
 import sqlalchemy as db
-from sqlalchemy import DECIMAL, Column, ForeignKey, Integer, String, Table
+from sqlalchemy import Float, Column, ForeignKey, Integer, String, Table
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import backref, relationship
 
@@ -37,14 +37,14 @@ dishes = Table('dishes', metadata,
                    'menus.menu_id', ondelete='CASCADE')),
                Column('title', String(120), nullable=False),
                Column('description', String(300), nullable=False),
-               Column('price', DECIMAL(5, 2), nullable=False)
+               Column('price', Float(5), nullable=False)
                )
 
 
 class DataBase:
 
     async def async_connect(self):
-        engine = create_async_engine(f'postgresql://{db_user}:{db_password}@{db_host}:5432/{db_name}', echo=True)
+        engine = create_async_engine(f"postgresql+asyncpg://{db_user}:{db_password}@{db_host}:5432/{db_name}", echo=True)
         async with engine.begin() as connection:
             await connection.run_sync(metadata.create_all)
         return engine

@@ -2,12 +2,14 @@ import asyncio
 import json
 
 from crud import CRUD
-from fastapi import FastAPI
+from fastapi import FastAPI, BackgroundTasks
 from fastapi.encoders import jsonable_encoder
 from schemas import Dish, Menu, SubMenu
+from cache_engine import RedisMemCache
 
 app = FastAPI()
 crud = CRUD()
+redis = RedisMemCache()
 
 
 # МЕНЮ
@@ -45,7 +47,8 @@ async def update_menu_record(menus_id: int, menu: Menu):
 
 # удаление записи меню
 @app.delete('/api/v1/menus/{menus_id}', status_code=200)
-async def delete_menu_record(menus_id: str):
+async def delete_menu_record(menus_id: str, background_tasks: BackgroundTasks):
+    background_tasks.add_task(menu_delete_cache, menus_id)
     result = await crud._MenuInterface().menu_delete_record(int(menus_id))
     return result
 
@@ -82,7 +85,8 @@ async def update_submenu_record(menus_id: int, submenus_id: int, submenu: SubMen
 
 # удаление записи
 @app.delete('/api/v1/menus/{menus_id}/submenus/{submenus_id}')
-async def delete_submenu_record(menus_id: int, submenus_id: int):
+async def delete_submenu_record(menus_id: int, submenus_id: int, background_tasks: BackgroundTasks):
+    background_tasks.add_task(submenu_delete_cache, submenus_id, menus_id)
     result = await crud._SubMenuInterface().submenu_delete_record(menus_id, submenus_id)
     return result
 
@@ -119,6 +123,30 @@ async def update_dish_record(menus_id: int, submenus_id: int, dishes_id: int, di
 
 # удалить блюдо
 @app.delete('/api/v1/menus/{menus_id}/submenus/{submenus_id}/dishes/{dishes_id}')
-async def delete_dish_record(menus_id: int, submenus_id: int, dishes_id: int):
+async def delete_dish_record(menus_id: int, submenus_id: int, dishes_id: int, background_tasks: BackgroundTasks):
+    background_tasks.add_task(
+        dish_delete_cache, dishes_id, submenus_id, menus_id)
     result = await crud._DishesInteface().dish_delete_record(menus_id, submenus_id, dishes_id)
     return result
+
+# получение всего списка сущностей
+
+
+@app.get('/api/v1/all')
+async def get_all_records():
+    result = await crud._SpecialRequest().get_all_records()
+    return result
+
+
+# Инвалидация кэша
+
+async def menu_delete_cache(id: str):
+    await redis._MenuMemCache().cache_del_menu(id)
+
+
+async def submenu_delete_cache(submenu_id: str, menu_id: str):
+    await redis._SubmenuMemCache().cache_del_submenu(submenu_id, menu_id)
+
+
+async def dish_delete_cache(dish_id: str, submenu_id: str, menu_id: str):
+    await redis._DishMemCache().cache_del_dish(dish_id, submenu_id, menu_id)

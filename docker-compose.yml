@@ -28,6 +28,8 @@ services:
     command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; uvicorn main:app --host 0.0.0.0'
     ports:
       - 8000:8000
+    expose:
+      - 8000
     depends_on:
       db:
         condition: service_healthy
@@ -38,7 +40,7 @@ services:
 
   db:
     image: postgres:15.1-alpine
-    container_name: database
+    container_name: PostgreSQL
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -63,7 +65,7 @@ services:
     image: redis:6.2-alpine
     container_name: redis
     ports:
-      - 6370:6370
+      - 6379:6379
     env_file:
       - .env
     environment:
@@ -72,6 +74,8 @@ services:
     entrypoint: redis-server --appendonly yes
     volumes:
       - cache:/data
+    expose:
+      - 6379
     networks:
       - api_network
     healthcheck:
@@ -81,9 +85,64 @@ services:
       retries: 5
       start_period: 10s
 
+  celery_worker:
+    container_name: celery_worker
+    env_file:
+      - .env
+    build:
+      context: ./admin
+      dockerfile: Dockerfile
+    networks:
+      - api_network
+    command: celery -A tasks worker -l info
+    volumes:
+    - ./console:/project/admin
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:3.12.7-management
+    container_name: rabbitmq
+    env_file:
+      - .env
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - api_network
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  pgadmin:
+      image: dpage/pgadmin4:4.18
+      container_name:  PgAdmin
+      restart: always
+      environment:
+        PGADMIN_DEFAULT_EMAIL: admin@admin.com
+        PGADMIN_DEFAULT_PASSWORD: admin
+        PGADMIN_LISTEN_PORT: 5011
+      ports:
+        - 5011:5011
+      volumes:
+        - pgadmin-data:/var/lib/pgadmin
+      networks:
+        - api_network
+
+
 networks:
   api_network:
 
 volumes:
   pg_project:
   cache:
+  pgadmin-data:

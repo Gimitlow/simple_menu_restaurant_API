@@ -117,8 +117,6 @@ class CRUD:
                 await conn.execute(sub_menus.delete().where(sub_menus.c.menu_id == id))
                 await conn.execute(menus.delete().where(menus.c.menu_id == id))
 
-                await redis_cache._MenuMemCache().cache_del_menu(id)
-
                 await engine.dispose()
 
                 return f'Запись Меню Id:{id} удалена'
@@ -257,8 +255,6 @@ class CRUD:
                 await conn.execute(sub_menus.delete().where(
                     sub_menus.c.menu_id == menu_id, sub_menus.c.sub_menu_id == submenus_id))
 
-                await redis_cache._SubmenuMemCache().cache_del_submenu(submenus_id, menu_id)
-
                 await engine.dispose()
                 return f'Запись Подменю Id:{submenus_id} удалена из Меню Id:{menu_id}'
 
@@ -377,6 +373,8 @@ class CRUD:
                 if not request.fetchall():
                     return f'Не найдено Блюдо Id:{dishes_id} в Подменю Id:{submenus_id} в Меню по Id:{menu_id}'
 
+                print(f'PRICE {self.price}')
+
                 request = await conn.execute(dishes.update().where(sub_menus.c.menu_id == menu_id, sub_menus.c.sub_menu_id ==
                                                                    submenus_id, dishes.c.dish_id == dishes_id).values(title=self.title, description=self.description, price=self.price))
 
@@ -400,3 +398,45 @@ class CRUD:
 
                 await engine.dispose()
                 return f'Запись блюда Id:{dishes_id} успешно удалена из Меню Id:{menu_id}, Подменю Id:{submenus_id}'
+
+    class _SpecialRequest:
+
+        async def get_all_records(self):
+            engine = await db.async_connect()
+
+            async with engine.begin() as conn:
+                resp = []
+
+                request = select(sub_menus, dishes).join(
+                    dishes, dishes.c.sub_menu_id == sub_menus.c.sub_menu_id)
+
+                subq = request.subquery()
+
+                req = select(menus, subq).join(
+                    subq, subq.c.menu_id == menus.c.menu_id)
+
+                response = await conn.execute(req)
+
+                for row in response:
+                    r = {
+                        'id': row[0],
+                        'title': row[1],
+                        'description': row[2],
+                        'sub_menus': {
+                            'id': row[3],
+                            'menu_id': row[4],
+                            'title': row[5],
+                            'description': row[6],
+                            'dish:': {
+                                'id': row[7],
+                                'submenu_id': row[8],
+                                'menu_id': row[9],
+                                'title': row[10],
+                                'description': row[11],
+                                'price': row[12]
+                            }
+                        }
+                    }
+                    resp.append(r)
+
+                return JSONResponse(content=resp, status_code=200)
